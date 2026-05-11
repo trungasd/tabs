@@ -38,11 +38,12 @@ function Tabs(selector, options = {}) {
 }
 
 Tabs.prototype._init = function () {
-  const hash = location.hash;
+  const params = new URLSearchParams(location.search);
+  const tabSelector = params.get("tab");
   const tab =
     (this.opt.remember &&
-      hash &&
-      this.tabs.find((tab) => tab.getAttribute("href") === hash)) ||
+      tabSelector &&
+      this.tabs.find((tab) => tab.getAttribute("href") === tabSelector)) ||
     this.tabs[0];
 
   this._activateTab(tab);
@@ -54,7 +55,6 @@ Tabs.prototype._init = function () {
 
 Tabs.prototype._handleTabClick = function (event, tab) {
   event.preventDefault();
-
   this._activateTab(tab);
 };
 
@@ -62,16 +62,18 @@ Tabs.prototype._activateTab = function (tab) {
   this.tabs.forEach((tab) => {
     tab.closest("li").classList.remove("tabs--active");
   });
-
   tab.closest("li").classList.add("tabs--active");
 
   this.panels.forEach((panel) => (panel.hidden = true));
-
   const panelActive = document.querySelector(tab.getAttribute("href"));
   panelActive.hidden = false;
 
   if (this.opt.remember) {
-    history.replaceState(null, null, tab.getAttribute("href"));
+    history.replaceState(
+      null,
+      null,
+      `?tab=${encodeURIComponent(tab.getAttribute("href"))}`,
+    );
   }
 };
 
