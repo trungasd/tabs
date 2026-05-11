@@ -28,24 +28,39 @@ function Tabs(selector, options = {}) {
   this.opt = Object.assign(
     {
       remember: false,
+      onChange: null,
     },
     options,
   );
 
+  this.paramKey = selector.replace(/[^a-zA-Z0-9]/g, "");
   this._originalHTML = this.container.innerHTML;
 
   this._init();
 }
 
+Tabs.prototype._getCleanHash = function (tab) {
+  const href = tab.getAttribute("href") || "";
+  return href.replace(/[^a-zA-Z0-9]/g, "");
+};
+
+Tabs.prototype._tryActivateTab = function (tab) {
+  if (this.currentTab !== tab) {
+    this._activateTab(tab);
+    this.currentTab = tab;
+  }
+};
+
 Tabs.prototype._init = function () {
   const params = new URLSearchParams(location.search);
-  const tabSelector = params.get("tab");
+  const tabSelector = params.get(this.paramKey);
   const tab =
     (this.opt.remember &&
       tabSelector &&
-      this.tabs.find((tab) => tab.getAttribute("href") === tabSelector)) ||
+      this.tabs.find((tab) => this._getCleanHash(tab) === tabSelector)) ||
     this.tabs[0];
 
+  this.currentTab = tab;
   this._activateTab(tab);
 
   this.tabs.forEach((tab) => {
@@ -55,10 +70,10 @@ Tabs.prototype._init = function () {
 
 Tabs.prototype._handleTabClick = function (event, tab) {
   event.preventDefault();
-  this._activateTab(tab);
+  this._tryActivateTab(tab, false);
 };
 
-Tabs.prototype._activateTab = function (tab) {
+Tabs.prototype._activateTab = function (tab, triggerOnChange = true) {
   this.tabs.forEach((tab) => {
     tab.closest("li").classList.remove("tabs--active");
   });
@@ -69,11 +84,17 @@ Tabs.prototype._activateTab = function (tab) {
   panelActive.hidden = false;
 
   if (this.opt.remember) {
-    history.replaceState(
-      null,
-      null,
-      `?tab=${encodeURIComponent(tab.getAttribute("href"))}`,
-    );
+    const params = new URLSearchParams(location.search);
+    const paramValue = this._getCleanHash(tab);
+    params.set(this.paramKey, paramValue);
+    history.replaceState(null, null, `?${params}`);
+  }
+
+  if (triggerOnChange && typeof this.opt.onChange === "function") {
+    this.opt.onChange({
+      tab,
+      panel: panelActive,
+    });
   }
 };
 
@@ -96,7 +117,7 @@ Tabs.prototype.switch = function (input) {
     return;
   }
 
-  this._activateTab(tabToActivate);
+  this._tryActivateTab(tabToActivate);
 };
 
 Tabs.prototype.destroy = function () {
@@ -105,4 +126,5 @@ Tabs.prototype.destroy = function () {
   this.container = null;
   this.tabs = null;
   this.panels = null;
+  this.currentTab = null;
 };
