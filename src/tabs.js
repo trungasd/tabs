@@ -57,8 +57,8 @@ Tabs.prototype._getCleanHash = function (tab) {
 //Kiểm tra trước khi click tab, tránh click lại tab đang hiển thị
 Tabs.prototype._tryActivateTab = function (tab) {
   if (this.currentTab !== tab) {
-    this._activateTab(tab);
     this.currentTab = tab;
+    this._activateTab(tab);
   }
 };
 
@@ -75,19 +75,23 @@ Tabs.prototype._init = function () {
     this.tabs[0];
 
   this.currentTab = tab;
-  this._activateTab(tab);
+  this._activateTab(tab, false, false);
 
   //Gán sự kiện click cho tất cả các tab
   this.tabs.forEach((tab) => {
     tab.onclick = (event) => {
       event.preventDefault();
-      this._tryActivateTab(tab, false);
+      this._tryActivateTab(tab);
     };
   });
 };
 
 //Xử lý chuyển đổi tab
-Tabs.prototype._activateTab = function (tab, triggerOnChange = true) {
+Tabs.prototype._activateTab = function (
+  tab,
+  triggerOnChange = true,
+  updateURL = this.opt.remember,
+) {
   this.tabs.forEach((tab) => {
     tab.closest("li").classList.remove(this.opt.activeClassName);
   });
@@ -99,7 +103,7 @@ Tabs.prototype._activateTab = function (tab, triggerOnChange = true) {
   panelActive.hidden = false;
 
   //Update URL nếu 'remember' bật
-  if (this.opt.remember) {
+  if (updateURL) {
     const params = new URLSearchParams(location.search);
     const paramValue = this._getCleanHash(tab);
     params.set(this.paramKey, paramValue);
